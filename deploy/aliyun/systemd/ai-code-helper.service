@@ -1,0 +1,14 @@
+[Unit]
+Description=AI Code Helper Backend
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ai-code-helper/backend
+ExecStart=/usr/bin/java -Xms512m -Xmx1024m -jar /opt/ai-code-helper/backend/ai-code-helper.jar --spring.profiles.active=prod --spring.config.additional-location=/opt/ai-code-helper/backend/config/
+SuccessExitStatus=143
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
