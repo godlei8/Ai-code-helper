@@ -35,6 +35,9 @@ New-Item -ItemType Directory -Path (Join-Path $bundleRoot 'systemd') -Force | Ou
 Push-Location $repoRoot
 try {
     & .\mvnw.cmd clean package -DskipTests
+    if ($LASTEXITCODE -ne 0) {
+        throw "Backend package failed with exit code $LASTEXITCODE."
+    }
 } finally {
     Pop-Location
 }
@@ -48,6 +51,9 @@ if (-not $jar) {
 Push-Location $frontendRoot
 try {
     npm run build
+    if ($LASTEXITCODE -ne 0) {
+        throw "Frontend build failed with exit code $LASTEXITCODE."
+    }
 } finally {
     Pop-Location
 }

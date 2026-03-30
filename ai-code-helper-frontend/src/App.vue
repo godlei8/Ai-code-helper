@@ -17,12 +17,12 @@ const currentAssistantMessageId = ref(null)
 const hotPrompts = ref([])
 const isLoadingHotPrompts = ref(false)
 const hotPromptsError = ref('')
-const totalMessages = computed(() => Math.max(messages.value.length - 1, 0))
 
+const visibleHotPrompts = computed(() => hotPrompts.value.slice(0, 5))
+const totalMessages = computed(() => Math.max(messages.value.length - 1, 0))
 const connectionLabel = computed(() =>
   isStreaming.value ? 'AI 正在实时回复' : `SSE 接口：${apiBaseUrl}/ai/chat`
 )
-
 const canSend = computed(() => prompt.value.trim() && !isStreaming.value)
 
 seedWelcomeMessage()
@@ -42,7 +42,7 @@ function seedWelcomeMessage() {
     {
       id: createMessageId(),
       role: 'assistant',
-      content: `你好，我是 AI 编程小助手。当前会话 ID 为 ${memoryId.value}。\n你可以问我编程学习路线、项目实践建议、求职准备和面试题。`,
+      content: `你好，我是 AI 编程小助手。当前会话 ID：${memoryId.value}\n你可以问我编程学习路线、项目实战、求职准备和面试问题。`,
       status: 'done',
       createdAt: Date.now()
     }
@@ -163,6 +163,28 @@ function stopStreaming() {
   currentAssistantMessageId.value = null
 }
 
+function shouldCenterAssistantMessage(content) {
+  const text = content?.trim()
+
+  if (!text) {
+    return false
+  }
+
+  if (text.length > 120) {
+    return false
+  }
+
+  if (text.split(/\r?\n/).length > 3) {
+    return false
+  }
+
+  if (/```|`|[#>*|]|\n\s*[-*]\s|\n\s*\d+\.\s/.test(text)) {
+    return false
+  }
+
+  return true
+}
+
 function sendMessage() {
   const userText = prompt.value.trim()
 
@@ -219,8 +241,7 @@ function sendMessage() {
     }
 
     assistantMessage.status = 'error'
-    assistantMessage.content =
-      '对话连接失败，请检查后端服务、SSE 接口和跨域配置是否正常。'
+    assistantMessage.content = '对话连接失败，请检查后端服务、SSE 接口和跨域配置是否正常。'
     currentAssistantMessageId.value = null
     ElMessage.error('SSE 连接失败，请确认后端接口可用。')
   }
@@ -234,46 +255,6 @@ function sendMessage() {
     <div class="backdrop grid-mask"></div>
 
     <main class="chat-layout">
-      <section class="hero-panel">
-        <div class="hero-copy">
-          <div class="brand-chip">
-            <img src="/favicon.svg" alt="AI Code Helper" class="brand-chip__logo" />
-            <span>AI Programming Co-pilot</span>
-          </div>
-          <h1>AI 编程小助手</h1>
-          <p>
-            面向编程学习、项目实践与求职面试的实时对话助手。
-            通过 SSE 流式输出建议，保持一问一答的聊天节奏。
-          </p>
-          <div class="hero-badges">
-            <span>实时 SSE 回复</span>
-            <span>Markdown 富文本</span>
-            <span>求职与学习双场景</span>
-          </div>
-        </div>
-
-        <div class="session-panel">
-          <div class="session-grid">
-            <div class="session-card">
-              <span>聊天室 ID</span>
-              <strong>{{ memoryId }}</strong>
-            </div>
-            <div class="session-card">
-              <span>当前消息数</span>
-              <strong>{{ totalMessages }}</strong>
-            </div>
-          </div>
-          <div class="session-actions">
-            <el-button plain round :icon="Delete" @click="clearMessages">
-              清空记录
-            </el-button>
-            <el-button plain round :icon="RefreshRight" @click="startNewSession">
-              新建会话
-            </el-button>
-          </div>
-        </div>
-      </section>
-
       <section class="chat-panel">
         <header class="chat-panel__header">
           <div>
@@ -307,7 +288,11 @@ function sendMessage() {
 
               <div
                 v-if="message.role === 'assistant'"
-                class="bubble__content bubble__content--markdown"
+                :class="[
+                  'bubble__content',
+                  'bubble__content--markdown',
+                  { 'bubble__content--centered': shouldCenterAssistantMessage(message.content) }
+                ]"
                 v-html="renderMarkdown(message.content)"
               ></div>
 
@@ -326,54 +311,6 @@ function sendMessage() {
             </div>
           </div>
         </div>
-
-        <section class="quick-prompts">
-          <div class="quick-prompts__header">
-            <div>
-              <h3>今日技术热榜</h3>
-              <p>基于掘金、V2EX、CNode 中文技术社区热榜，每天自动刷新。</p>
-            </div>
-            <el-button
-              plain
-              round
-              :icon="RefreshRight"
-              :loading="isLoadingHotPrompts"
-              @click="loadHotPrompts(true)"
-            >
-              刷新热榜
-            </el-button>
-          </div>
-
-          <div v-if="isLoadingHotPrompts" class="prompt-grid prompt-grid--loading">
-            <div v-for="index in 4" :key="index" class="prompt-card prompt-card--placeholder">
-              <span class="prompt-card__tag">加载中</span>
-              <strong></strong>
-              <p></p>
-            </div>
-          </div>
-
-          <div v-else-if="hotPrompts.length" class="prompt-grid">
-            <button
-              v-for="item in hotPrompts"
-              :key="item.id"
-              type="button"
-              class="prompt-card"
-              :title="item.title"
-              @click="selectHotPrompt(item)"
-            >
-              <div class="prompt-card__meta">
-                <span class="prompt-card__tag">{{ item.sourceLabel }}</span>
-                <span class="prompt-card__tag prompt-card__tag--soft">{{ item.tagLabel }}</span>
-              </div>
-              <strong>{{ item.title }}</strong>
-              <p>点击带入这个中文热榜话题，做编程讲解、求职分析和面试延伸。</p>
-            </button>
-          </div>
-
-          <div v-else class="prompt-empty">
-            {{ hotPromptsError || '暂时没有可展示的热门问题。' }}
-          </div>
-        </section>
 
         <footer class="composer">
           <el-input
@@ -412,6 +349,99 @@ function sendMessage() {
           </div>
         </footer>
       </section>
+
+      <aside class="side-rail">
+        <section class="hero-panel">
+          <div class="hero-copy">
+            <div class="brand-chip">
+              <img src="/favicon.svg" alt="AI Code Helper" class="brand-chip__logo" />
+              <span>AI Programming Co-pilot</span>
+            </div>
+            <h1>AI 编程小助手</h1>
+            <p>
+              面向编程学习、项目实践与求职面试的实时对话助手，通过 SSE 流式返回内容，
+              保持连贯的问答节奏。
+            </p>
+            <div class="hero-badges">
+              <span>实时 SSE 回复</span>
+              <span>Markdown 富文本</span>
+              <span>学习与求职双场景</span>
+            </div>
+          </div>
+
+          <div class="session-panel">
+            <div class="session-grid">
+              <div class="session-card">
+                <span>聊天会话 ID</span>
+                <strong>{{ memoryId }}</strong>
+              </div>
+              <div class="session-card">
+                <span>当前消息数</span>
+                <strong>{{ totalMessages }}</strong>
+              </div>
+            </div>
+            <div class="session-actions">
+              <el-button plain round :icon="Delete" @click="clearMessages">
+                清空记录
+              </el-button>
+              <el-button plain round :icon="RefreshRight" @click="startNewSession">
+                新建会话
+              </el-button>
+            </div>
+          </div>
+        </section>
+
+        <section class="hot-panel">
+          <div class="quick-prompts">
+            <div class="quick-prompts__header">
+              <div>
+                <h3>今日技术热榜</h3>
+                <p>聚焦编程、面试和求职相关话题。</p>
+              </div>
+              <el-button
+                plain
+                round
+                size="small"
+                :icon="RefreshRight"
+                :loading="isLoadingHotPrompts"
+                @click="loadHotPrompts(true)"
+              >
+                刷新热榜
+              </el-button>
+            </div>
+
+            <div v-if="isLoadingHotPrompts" class="prompt-grid prompt-grid--loading">
+              <div v-for="index in 5" :key="index" class="prompt-card prompt-card--placeholder">
+                <span class="prompt-card__tag">加载中</span>
+                <strong></strong>
+                <p></p>
+              </div>
+            </div>
+
+            <div v-else-if="visibleHotPrompts.length" class="prompt-grid">
+              <button
+                v-for="item in visibleHotPrompts"
+                :key="item.id"
+                type="button"
+                class="prompt-card"
+                :title="item.title"
+                @click="selectHotPrompt(item)"
+              >
+                <div class="prompt-card__meta">
+                  <span class="prompt-card__tag">{{ item.sourceLabel }}</span>
+                  <span class="prompt-card__tag prompt-card__tag--soft">{{ item.tagLabel }}</span>
+                </div>
+                <strong>{{ item.title }}</strong>
+                <p></p>
+              </button>
+            </div>
+
+            <div v-else class="prompt-empty">
+              {{ hotPromptsError || '暂时没有可展示的热门问题。' }}
+            </div>
+          </div>
+        </section>
+      </aside>
     </main>
   </div>
 </template>

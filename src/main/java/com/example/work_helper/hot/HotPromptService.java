@@ -29,6 +29,7 @@ public class HotPromptService {
     private static final String V2EX_HOT_URL = "https://www.v2ex.com/api/topics/hot.json";
     private static final Duration HOT_SOURCE_CONNECT_TIMEOUT = Duration.ofSeconds(3);
     private static final Duration HOT_SOURCE_READ_TIMEOUT = Duration.ofSeconds(4);
+    private static final int MAX_PROMPTS = 5;
 
     private static final List<KeywordWeight> THEME_KEYWORDS = List.of(
             new KeywordWeight("面试", 140),
@@ -300,7 +301,7 @@ public class HotPromptService {
                 .sorted(Comparator.comparingDouble(HotPromptCandidate::themeScore)
                         .thenComparingDouble(HotPromptCandidate::hotnessScore)
                         .reversed())
-                .limit(6)
+                .limit(MAX_PROMPTS)
                 .map(candidate -> new HotPromptItem(
                         candidate.id(),
                         candidate.title(),
@@ -311,14 +312,14 @@ public class HotPromptService {
                 ))
                 .toList();
 
-        if (items.size() >= 6) {
+        if (items.size() >= MAX_PROMPTS) {
             return items;
         }
 
         LinkedHashMap<String, HotPromptItem> merged = new LinkedHashMap<>();
         items.forEach(item -> merged.putIfAbsent(normalizeTitle(item.title()), item));
         DEFAULT_PROMPTS.forEach(item -> merged.putIfAbsent(normalizeTitle(item.title()), item));
-        return merged.values().stream().limit(6).toList();
+        return merged.values().stream().limit(MAX_PROMPTS).toList();
     }
 
     private String buildPrompt(HotPromptCandidate candidate) {

@@ -1,6 +1,7 @@
 import { http } from './http'
 
 const HOT_PROMPTS_CACHE_KEY = 'ai-code-helper:hot-prompts:v2'
+const MAX_HOT_PROMPTS = 5
 
 const DEFAULT_PROMPT_ITEMS = [
   {
@@ -71,7 +72,7 @@ function writeCache(items) {
 }
 
 function buildFallbackPrompts() {
-  return DEFAULT_PROMPT_ITEMS.map((item) => ({
+  return DEFAULT_PROMPT_ITEMS.slice(0, MAX_HOT_PROMPTS).map((item) => ({
     id: item.id,
     title: item.title,
     prompt: `请围绕这个编程学习或求职问题，给我一份结构化中文回答，包含背景分析、具体建议、常见误区、面试延伸问题和下一步行动方案：${item.title}`,
@@ -88,6 +89,7 @@ function normalizeItems(items) {
 
   return items
     .filter((item) => item && item.id && item.title && item.prompt)
+    .slice(0, MAX_HOT_PROMPTS)
     .map((item) => ({
       id: String(item.id),
       title: String(item.title),
@@ -103,7 +105,7 @@ export async function getDailyHotPrompts(options = {}) {
   const cache = readCache()
 
   if (!forceRefresh && cache?.date === todayKey() && Array.isArray(cache.items) && cache.items.length) {
-    return cache.items
+    return cache.items.slice(0, MAX_HOT_PROMPTS)
   }
 
   try {
@@ -121,7 +123,7 @@ export async function getDailyHotPrompts(options = {}) {
     }
   } catch {
     if (!forceRefresh && cache?.items?.length) {
-      return cache.items
+      return cache.items.slice(0, MAX_HOT_PROMPTS)
     }
   }
 
