@@ -55,8 +55,16 @@ function normalizeMarkdownSyntax(source) {
     .join('\n')
 }
 
+function stripThinkBlocks(source) {
+  return source
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<think>[\s\S]*$/gi, '')
+    .replace(/<\/think>/gi, '')
+}
+
 export function renderMarkdown(content) {
-  const source = content?.trim() ? normalizeMarkdownSyntax(content) : ''
+  const normalizedContent = content?.trim() ? stripThinkBlocks(content) : ''
+  const source = normalizedContent ? normalizeMarkdownSyntax(normalizedContent) : ''
   const html = markdown.render(source)
 
   return html.replace(/<table>/g, '<div class="table-wrap"><table>').replace(/<\/table>/g, '</table></div>')

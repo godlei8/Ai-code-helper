@@ -4,34 +4,73 @@ import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
-import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
+import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
+import dev.langchain4j.service.tool.ToolProvider;
+import dev.langchain4j.service.tool.ToolProviderResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+
 @Configuration
 public class McpConfig {
 
-    @Value("${bigmodel.api-key}")
+    private static final Logger log = LoggerFactory.getLogger(McpConfig.class);
+
+    @Value("${minimax.api-key:}")
     private String apiKey;
 
+    @Value("${minimax.api-host:https://api.minimaxi.com}")
+    private String apiHost;
+
+    @Value("${minimax.mcp.command:uvx}")
+    private String mcpCommand;
+
+    @Value("${minimax.mcp.base-path:target/minimax-mcp}")
+    private String mcpBasePath;
+
+    @Value("${minimax.mcp.resource-mode:url}")
+    private String resourceMode;
+
     @Bean
-    public McpToolProvider mcpToolProvider() {
-        // 和 MCP 服务通讯
-        McpTransport transport = new HttpMcpTransport.Builder()
-                .sseUrl("https://open.bigmodel.cn/api/mcp/web_search_prime/sse?Authorization=" + apiKey)
-                .logRequests(true) // 开启日志，查看更多信息
-                .logResponses(true)
-                .build();
-        // 创建 MCP 客户端
-        McpClient mcpClient = new DefaultMcpClient.Builder()
-                .key("yupiMcpClient")
-                .transport(transport)
-                .build();
-        // 从 MCP 客户端获取工具
-        McpToolProvider toolProvider = McpToolProvider.builder()
-                .mcpClients(mcpClient)
-                .build();
-        return toolProvider;
+    public ToolProvider mcpToolProvider() {
+        if (apiKey == null || apiKey.isBlank()) {
+            log.warn("MCP initialization skipped, minimax.api-key is not configured");
+            return request -> new ToolProviderResult(Map.of());
+        }
+
+        try {
+            Path basePath = Path.of(mcpBasePath).toAbsolutePath();
+            Files.createDirectories(basePath);
+
+            McpTransport transport = new StdioMcpTransport.Builder()
+                    .command(List.of(mcpCommand, "minimax-coding-plan-mcp", "-y"))
+                    .environment(Map.of(
+                            "MINIMAX_API_KEY", apiKey,
+                            "MINIMAX_API_HOST", apiHost,
+                            "MINIMAX_MCP_BASE_PATH", basePath.toString(),
+                            "MINIMAX_API_RESOURCE_MODE", resourceMode
+                    ))
+                    .logEvents(true)
+                    .build();
+
+            McpClient mcpClient = new DefaultMcpClient.Builder()
+                    .key("miniMaxCodingPlanMcp")
+                    .transport(transport)
+                    .build();
+
+            return McpToolProvider.builder()
+                    .mcpClients(mcpClient)
+                    .build();
+        } catch (Exception exception) {
+            log.warn("MCP initialization failed, MCP tools disabled: {}", exception.getMessage());
+            return request -> new ToolProviderResult(Map.of());
+        }
     }
 }

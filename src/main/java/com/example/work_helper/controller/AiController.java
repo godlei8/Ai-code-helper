@@ -2,40 +2,93 @@ package com.example.work_helper.controller;
 
 import com.example.work_helper.ai.AiCodeHelperService;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
-/**
- * REST控制器，处理与AI相关的HTTP请求
- * 路径前缀为"/ai"
- */
 @RestController
 @RequestMapping("/ai")
 public class AiController {
 
-    /**
-     * 注入AiCodeHelperService服务
-     * 用于处理AI代码相关的业务逻辑
-     */
+    private static final Logger log = LoggerFactory.getLogger(AiController.class);
+
     @Resource
     private AiCodeHelperService aiCodeHelperService;
 
-    /**
-     * 处理GET请求"/ai/chat"
-     * 提供聊天功能，返回服务器发送事件(SSE)流
-     *
-     * @param memoryId 记忆ID，用于标识会话
-     * @param message 用户发送的消息内容
-     * @return Flux<ServerSentEvent<String>> 服务器发送事件流，每个事件包含聊天消息块
-     */
-    @GetMapping("/chat")
-    public Flux<ServerSentEvent<String>> chat(int memoryId, String message) {
-        return aiCodeHelperService.chatStream(memoryId, message)
-                .map(chunk -> ServerSentEvent.<String>builder()
-                        .data(chunk)
-                        .build());
+    @GetMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> chat(@RequestParam int memoryId, @RequestParam String message) {
+        try {
+            return aiCodeHelperService.chatStream(memoryId, message)
+                    .map(chunk -> ServerSentEvent.<String>builder()
+                            .data(chunk)
+                            .build())
+                    .onErrorResume(exception -> {
+                        logModelFailure("Chat stream failed", memoryId, exception);
+                        return Flux.just(ServerSentEvent.<String>builder()
+                                .data(toUserFriendlyMessage(exception))
+                                .build());
+                    });
+        } catch (Exception exception) {
+            logModelFailure("Chat stream initialization failed", memoryId, exception);
+            return Flux.just(ServerSentEvent.<String>builder()
+                    .data(toUserFriendlyMessage(exception))
+                    .build());
+        }
+    }
+
+    private void logModelFailure(String message, int memoryId, Throwable exception) {
+        if (isKnownProviderFailure(exception)) {
+            log.warn("{} memoryId={}, reason={}", message, memoryId, summarizeException(exception));
+            return;
+        }
+
+        log.error("{} memoryId={}", message, memoryId, exception);
+    }
+
+    private boolean isKnownProviderFailure(Throwable exception) {
+        String summary = summarizeException(exception).toLowerCase();
+        return summary.contains("arrearage")
+                || summary.contains("overdue-payment")
+                || summary.contains("invalidapikey")
+                || summary.contains("invalid api-key")
+                || summary.contains("quota")
+                || summary.contains("429");
+    }
+
+    private String toUserFriendlyMessage(Throwable exception) {
+        String summary = summarizeException(exception).toLowerCase();
+        if (summary.contains("arrearage") || summary.contains("overdue-payment")) {
+            return "当前模型账户状态异常或已欠费，请先检查 MiniMax 平台账单和套餐状态。";
+        }
+        if (summary.contains("invalidapikey") || summary.contains("invalid api-key") || summary.contains("api key")) {
+            return "当前模型 API Key 无效或未配置，请检查 minimax.api-key。";
+        }
+        if (summary.contains("quota") || summary.contains("429")) {
+            return "当前模型额度不足或请求过于频繁，请稍后再试。";
+        }
+        return "当前对话服务暂时不可用，请检查模型配置或稍后重试。";
+    }
+
+    private String summarizeException(Throwable exception) {
+        StringBuilder builder = new StringBuilder();
+        Throwable current = exception;
+        int depth = 0;
+        while (current != null && depth < 5) {
+            if (current.getMessage() != null && !current.getMessage().isBlank()) {
+                if (builder.length() > 0) {
+                    builder.append(" | ");
+                }
+                builder.append(current.getMessage());
+            }
+            current = current.getCause();
+            depth++;
+        }
+        return builder.length() == 0 ? exception.getClass().getSimpleName() : builder.toString();
     }
 }

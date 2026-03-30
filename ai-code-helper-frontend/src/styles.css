@@ -596,10 +596,12 @@ textarea {
 .prompt-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0;
   width: 100%;
-  min-height: 142px;
-  padding: 16px;
+  min-height: 96px;
+  padding: 18px 16px;
   border: 1px solid rgba(225, 202, 168, 0.72);
   border-radius: 22px;
   background:
@@ -614,6 +616,7 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 10px;
 }
 
 .prompt-card:hover {
@@ -635,9 +638,10 @@ textarea {
 }
 
 .prompt-card__tag--soft {
-  background: rgba(255, 250, 242, 0.88);
-  color: #9d7348;
-  border: 1px solid rgba(224, 199, 162, 0.62);
+  display: inline-flex;
+  background: rgba(255, 244, 226, 0.92);
+  color: #9a6a36;
+  border: 1px solid rgba(216, 183, 137, 0.55);
 }
 
 .prompt-card strong {
@@ -645,16 +649,13 @@ textarea {
   overflow: hidden;
   color: #32291f;
   font-size: 15px;
-  line-height: 1.55;
+  line-height: 1.65;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 }
 
 .prompt-card p {
-  margin: 0;
-  color: var(--ink-muted);
-  font-size: 13px;
-  line-height: 1.6;
+  display: none;
 }
 
 .prompt-card--placeholder {
@@ -669,8 +670,13 @@ textarea {
   animation: shimmer 1.6s linear infinite;
 }
 
+.prompt-card--placeholder .prompt-card__tag {
+  display: none;
+}
+
 .prompt-card--placeholder strong {
   height: 20px;
+  width: 84%;
 }
 
 .prompt-card--placeholder p {

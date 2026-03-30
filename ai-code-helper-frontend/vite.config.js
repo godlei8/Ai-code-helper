@@ -13,16 +13,6 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: env.VITE_PROXY_TARGET || 'http://localhost:8081',
           changeOrigin: true
-        },
-        '/hot-api/juejin': {
-          target: 'https://api.juejin.cn',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/hot-api\/juejin/, '')
-        },
-        '/hot-api/v2ex': {
-          target: 'https://www.v2ex.com',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/hot-api\/v2ex/, '')
         }
       }
     }

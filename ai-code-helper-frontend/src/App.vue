@@ -94,12 +94,12 @@ function appendMessage(message) {
   scrollToBottom()
 }
 
-function fillPrompt(text) {
+function selectHotPrompt(item) {
   if (isStreaming.value) {
     return
   }
 
-  prompt.value = text
+  prompt.value = item.title
   focusInput()
 }
 
@@ -124,12 +124,12 @@ function clearMessages() {
   ElMessage.success('聊天记录已清空')
 }
 
-async function loadHotPrompts() {
+async function loadHotPrompts(forceRefresh = false) {
   isLoadingHotPrompts.value = true
   hotPromptsError.value = ''
 
   try {
-    hotPrompts.value = await getDailyHotPrompts()
+    hotPrompts.value = await getDailyHotPrompts({ forceRefresh })
   } catch {
     hotPrompts.value = []
     hotPromptsError.value = '今日热门问题加载失败，你也可以直接输入自己的问题。'
@@ -338,7 +338,7 @@ function sendMessage() {
               round
               :icon="RefreshRight"
               :loading="isLoadingHotPrompts"
-              @click="loadHotPrompts"
+              @click="loadHotPrompts(true)"
             >
               刷新热榜
             </el-button>
@@ -359,7 +359,7 @@ function sendMessage() {
               type="button"
               class="prompt-card"
               :title="item.title"
-              @click="fillPrompt(item.prompt)"
+              @click="selectHotPrompt(item)"
             >
               <div class="prompt-card__meta">
                 <span class="prompt-card__tag">{{ item.sourceLabel }}</span>
