@@ -218,7 +218,7 @@ npm run build
 ### 阿里云部署包
 
 ```powershell
-.\deploy\aliyun\package-aliyun.ps1
+.\deploy\aliyun\build-release.ps1
 ```
 
 打包完成后会在 `release/` 下生成阿里云可部署的 zip，内含：
