@@ -27,18 +27,36 @@ public class AiCodeHelper {
     private ChatModel miniMaxChatModel;
 
     public String chat(String message) {
-        SystemMessage systemMessage = SystemMessage.from(SYSTEM_MESSAGE);
-        UserMessage userMessage = UserMessage.from(message);
-        ChatResponse chatResponse = miniMaxChatModel.chat(systemMessage, userMessage);
-        AiMessage aiMessage = chatResponse.aiMessage();
-        log.info("AI response: {}", aiMessage);
-        return aiMessage.text();
+        if (miniMaxChatModel == null) {
+            return "AI功能未配置，请联系管理员配置MiniMax API Key。";
+        }
+
+        try {
+            SystemMessage systemMessage = SystemMessage.from(SYSTEM_MESSAGE);
+            UserMessage userMessage = UserMessage.from(message);
+            ChatResponse chatResponse = miniMaxChatModel.chat(systemMessage, userMessage);
+            AiMessage aiMessage = chatResponse.aiMessage();
+            log.info("AI response: {}", aiMessage);
+            return aiMessage.text();
+        } catch (Exception e) {
+            log.error("Failed to get AI response", e);
+            return "AI服务调用失败: " + e.getMessage();
+        }
     }
 
     public String chatWithMessage(UserMessage userMessage) {
-        ChatResponse chatResponse = miniMaxChatModel.chat(userMessage);
-        AiMessage aiMessage = chatResponse.aiMessage();
-        log.info("AI response: {}", aiMessage);
-        return aiMessage.text();
+        if (miniMaxChatModel == null) {
+            return "AI功能未配置，请联系管理员配置MiniMax API Key。";
+        }
+
+        try {
+            ChatResponse chatResponse = miniMaxChatModel.chat(userMessage);
+            AiMessage aiMessage = chatResponse.aiMessage();
+            log.info("AI response: {}", aiMessage);
+            return aiMessage.text();
+        } catch (Exception e) {
+            log.error("Failed to get AI response", e);
+            return "AI服务调用失败: " + e.getMessage();
+        }
     }
 }

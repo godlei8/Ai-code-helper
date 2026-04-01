@@ -40,13 +40,13 @@ public class RagConfig {
                 for (TextSegment segment : splitter.split(document)) {
                     TextSegment decoratedSegment = TextSegment.from(
                             segment.metadata().getString("file_name") + "\n" + segment.text(),
-                            segment.metadata()
-                    );
+                            segment.metadata());
                     indexedSegments.add(new IndexedSegment(decoratedSegment, extractTokens(decoratedSegment.text())));
                 }
             }
 
             log.info("Local RAG initialized with {} text segments", indexedSegments.size());
+
             return query -> retrieveRelevantContent(indexedSegments, query.text());
         } catch (Exception exception) {
             log.warn("RAG initialization failed, content retrieval disabled: {}", exception.getMessage());

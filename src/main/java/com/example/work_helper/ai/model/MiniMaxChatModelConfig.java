@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 import java.time.Duration;
 import java.util.List;
@@ -39,11 +40,21 @@ public class MiniMaxChatModelConfig {
     private long streamingTimeoutSeconds;
 
     @Resource
+    @Lazy
     private ChatModelListener chatModelListener;
 
     @Bean
+    @Lazy
     public ChatModel miniMaxChatModel() {
-        validateRequiredConfig();
+        if (!isConfigured()) {
+            log.warn("MiniMax ChatModel is not configured. AI chat features will be disabled. " +
+                    "Set 'minimax.api-key' in application configuration to enable.");
+            return null;
+        }
+
+        log.info("MiniMax API key configured, enabling chat model with baseUrl: {}, model: {}",
+                baseUrl, chatModelName);
+
         return OpenAiChatModel.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
@@ -56,8 +67,16 @@ public class MiniMaxChatModelConfig {
     }
 
     @Bean
+    @Lazy
     public StreamingChatModel miniMaxStreamingChatModel() {
-        validateRequiredConfig();
+        if (!isConfigured()) {
+            log.warn("MiniMax StreamingChatModel is not configured. Streaming AI features will be disabled.");
+            return null;
+        }
+
+        log.info("MiniMax StreamingChatModel configured with baseUrl: {}, model: {}",
+                baseUrl, streamingChatModelName);
+
         return OpenAiStreamingChatModel.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
@@ -69,21 +88,8 @@ public class MiniMaxChatModelConfig {
                 .build();
     }
 
-    private void validateRequiredConfig() {
-        requireConfigured("minimax.api-key", apiKey);
-        requireConfigured("minimax.base-url", baseUrl);
-        requireConfigured("minimax.chat-model.model-name", chatModelName);
-        requireConfigured("minimax.streaming-chat-model.model-name", streamingChatModelName);
-    }
-
-    private void requireConfigured(String propertyName, String value) {
-        if (isBlankOrPlaceholder(value)) {
-            throw new IllegalStateException(propertyName + " is not configured. Set it in application-prod.yml before starting the service.");
-        }
-
-        if ("minimax.api-key".equals(propertyName)) {
-            log.info("MiniMax API key detected, model calls are enabled.");
-        }
+    private boolean isConfigured() {
+        return !isBlankOrPlaceholder(apiKey);
     }
 
     private boolean isBlankOrPlaceholder(String value) {
