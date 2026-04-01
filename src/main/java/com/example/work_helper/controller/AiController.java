@@ -57,8 +57,16 @@ public class AiController {
                 || summary.contains("overdue-payment")
                 || summary.contains("invalidapikey")
                 || summary.contains("invalid api-key")
+                || summary.contains("unauthorized")
+                || summary.contains("forbidden")
+                || summary.contains("401")
+                || summary.contains("403")
                 || summary.contains("quota")
-                || summary.contains("429");
+                || summary.contains("429")
+                || summary.contains("timed out")
+                || summary.contains("connection refused")
+                || summary.contains("unknown host")
+                || summary.contains("failed to resolve");
     }
 
     private String toUserFriendlyMessage(Throwable exception) {
@@ -66,11 +74,23 @@ public class AiController {
         if (summary.contains("arrearage") || summary.contains("overdue-payment")) {
             return "当前模型账户状态异常或已欠费，请先检查 MiniMax 平台账单和套餐状态。";
         }
-        if (summary.contains("invalidapikey") || summary.contains("invalid api-key") || summary.contains("api key")) {
+        if (summary.contains("invalidapikey")
+                || summary.contains("invalid api-key")
+                || summary.contains("api key")
+                || summary.contains("unauthorized")
+                || summary.contains("forbidden")
+                || summary.contains("401")
+                || summary.contains("403")) {
             return "当前模型 API Key 无效或未配置，请检查 minimax.api-key。";
         }
         if (summary.contains("quota") || summary.contains("429")) {
             return "当前模型额度不足或请求过于频繁，请稍后再试。";
+        }
+        if (summary.contains("timed out")
+                || summary.contains("connection refused")
+                || summary.contains("unknown host")
+                || summary.contains("failed to resolve")) {
+            return "当前模型服务网络连接失败，请检查服务器出网、DNS 和 minimax.base-url 配置。";
         }
         return "当前对话服务暂时不可用，请检查模型配置或稍后重试。";
     }

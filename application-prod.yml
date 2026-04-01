@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: work_helper
+server:
+  port: 8081
+  servlet:
+    context-path: /api
+minimax:
+  api-key: sk-cp-mQEiKTFw0qCK0vFvEFKlFUwW3KWWmyivuwaNS2SAFwQ4nfpxQlFFle5VNBdkAeukCwiZAkamlH9XA96tsFBq8wPP3JhroNV0mZWrEvQy9R7C3Ts44IfQ8Nk
+  base-url: https://api.minimaxi.com/v1
+  api-host: https://api.minimaxi.com
+  chat-model:
+    model-name: MiniMax-M2.7
+    timeout-seconds: 120
+  streaming-chat-model:
+    model-name: MiniMax-M2.7
+    timeout-seconds: 120
+  mcp:
+    command: uvx
+    base-path: target/minimax-mcp
+    resource-mode: url

@@ -6,6 +6,8 @@ import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +17,8 @@ import java.util.List;
 
 @Configuration
 public class MiniMaxChatModelConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(MiniMaxChatModelConfig.class);
 
     @Value("${minimax.api-key:}")
     private String apiKey;
@@ -39,6 +43,7 @@ public class MiniMaxChatModelConfig {
 
     @Bean
     public ChatModel miniMaxChatModel() {
+        validateRequiredConfig();
         return OpenAiChatModel.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
@@ -52,6 +57,7 @@ public class MiniMaxChatModelConfig {
 
     @Bean
     public StreamingChatModel miniMaxStreamingChatModel() {
+        validateRequiredConfig();
         return OpenAiStreamingChatModel.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
@@ -61,5 +67,38 @@ public class MiniMaxChatModelConfig {
                 .logResponses(true)
                 .listeners(List.of(chatModelListener))
                 .build();
+    }
+
+    private void validateRequiredConfig() {
+        requireConfigured("minimax.api-key", apiKey);
+        requireConfigured("minimax.base-url", baseUrl);
+        requireConfigured("minimax.chat-model.model-name", chatModelName);
+        requireConfigured("minimax.streaming-chat-model.model-name", streamingChatModelName);
+    }
+
+    private void requireConfigured(String propertyName, String value) {
+        if (isBlankOrPlaceholder(value)) {
+            throw new IllegalStateException(propertyName + " is not configured. Set it in application-prod.yml before starting the service.");
+        }
+
+        if ("minimax.api-key".equals(propertyName)) {
+            log.info("MiniMax API key detected, model calls are enabled.");
+        }
+    }
+
+    private boolean isBlankOrPlaceholder(String value) {
+        if (value == null) {
+            return true;
+        }
+
+        String normalized = value.trim();
+        if (normalized.isEmpty()) {
+            return true;
+        }
+
+        String lowerCase = normalized.toLowerCase();
+        return normalized.startsWith("<")
+                || normalized.contains("${")
+                || lowerCase.contains("your minimax api key");
     }
 }

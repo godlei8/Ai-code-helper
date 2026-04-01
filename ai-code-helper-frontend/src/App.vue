@@ -432,7 +432,6 @@ function sendMessage() {
                   <span class="prompt-card__tag prompt-card__tag--soft">{{ item.tagLabel }}</span>
                 </div>
                 <strong>{{ item.title }}</strong>
-                <p></p>
               </button>
             </div>
 

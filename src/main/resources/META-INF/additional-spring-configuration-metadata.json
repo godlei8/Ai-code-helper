@@ -1,0 +1,63 @@
+{
+  "properties": [
+    {
+      "name": "minimax.api-key",
+      "type": "java.lang.String",
+      "description": "MiniMax API Key for chat model access"
+    },
+    {
+      "name": "minimax.base-url",
+      "type": "java.lang.String",
+      "description": "MiniMax API base URL",
+      "defaultValue": "https://api.minimaxi.com/v1"
+    },
+    {
+      "name": "minimax.api-host",
+      "type": "java.lang.String",
+      "description": "MiniMax API host",
+      "defaultValue": "https://api.minimaxi.com"
+    },
+    {
+      "name": "minimax.chat-model.model-name",
+      "type": "java.lang.String",
+      "description": "Chat model name",
+      "defaultValue": "MiniMax-M2.7"
+    },
+    {
+      "name": "minimax.chat-model.timeout-seconds",
+      "type": "java.lang.Integer",
+      "description": "Chat model timeout in seconds",
+      "defaultValue": "120"
+    },
+    {
+      "name": "minimax.streaming-chat-model.model-name",
+      "type": "java.lang.String",
+      "description": "Streaming chat model name",
+      "defaultValue": "MiniMax-M2.7"
+    },
+    {
+      "name": "minimax.streaming-chat-model.timeout-seconds",
+      "type": "java.lang.Integer",
+      "description": "Streaming chat model timeout in seconds",
+      "defaultValue": "120"
+    },
+    {
+      "name": "minimax.mcp.command",
+      "type": "java.lang.String",
+      "description": "MCP command to run",
+      "defaultValue": "uvx"
+    },
+    {
+      "name": "minimax.mcp.base-path",
+      "type": "java.lang.String",
+      "description": "MCP base path for resource storage",
+      "defaultValue": "target/minimax-mcp"
+    },
+    {
+      "name": "minimax.mcp.resource-mode",
+      "type": "java.lang.String",
+      "description": "MCP resource mode (url or file)",
+      "defaultValue": "url"
+    }
+  ]
+}
